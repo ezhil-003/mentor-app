@@ -5,19 +5,33 @@ import { env } from "@/env";
 import { db } from "@/server/db";
 
 export const auth = betterAuth({
+
+  baseURL: env.NEXT_PUBLIC_BASE_URL,
+
+  trustedOrigins: [env.NEXT_PUBLIC_BASE_URL],
+
+  secret: env.BETTER_AUTH_SECRET,
+
   database: prismaAdapter(db, {
     provider: "postgresql", // or "sqlite" or "mysql"
   }),
+
   emailAndPassword: {
     enabled: true,
   },
-  socialProviders: {
-    github: {
-      clientId: env.BETTER_AUTH_GITHUB_CLIENT_ID,
-      clientSecret: env.BETTER_AUTH_GITHUB_CLIENT_SECRET,
-      redirectURI: "http://localhost:3000/api/auth/callback/github",
-    },
-  },
+
+  user: {
+    additionalFields: {
+      phone: {
+        type: "string",
+        input: true,
+      },
+      countryCode: {
+        type: "string",
+        input: true,
+      },
+    }
+  }
 });
 
 export type Session = typeof auth.$Infer.Session;
