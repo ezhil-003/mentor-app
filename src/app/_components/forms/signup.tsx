@@ -1,8 +1,9 @@
 "use client";
 import { z } from "zod";
 import Link from "next/link";
-import type { User } from "@/app/@types/formTypes";
+import type { User } from "@/app/@types/types";
 import { useForm, type AnyFieldApi } from "@tanstack/react-form-nextjs";
+import { parsePhoneNumber } from "react-phone-number-input";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,12 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { authClient } from "@/server/better-auth/client";
@@ -34,45 +30,40 @@ const defaultUser: User = {
   countrycode: "",
 };
 
-const signupSchema = z.object({
-  firstName: z
-    .string()
-    .min(2, "Should be at least 2 characters")
-    .max(10, "Cant be more than 10 characters"),
-  lastName: z
-    .string()
-    .min(2, "Should be at least 2 characters")
-    .max(10, "Cant be more than 10 characters"),
-  email: z.string().email("Must be a valid email"),
-  password: z
-    .string()
-    .min(8, "Should be at least 8 characters")
-    .max(10, "Cant be more than 10 characters"),
-  confirmPassword: z
-    .string()
-    .min(8, "Should be at least 8 characters")
-    .max(10, "Cant be more than 10 characters"),
-  phonenumber: z
-    .string()
-    .min(10, "Must be a valid contact number")
-    .max(15, "Must be a valid contact number"),
-  countrycode: z.string().min(2).max(4),
-});
+const signupSchema = z
+  .object({
+    firstName: z
+      .string()
+      .min(2, "Should be at least 2 characters")
+      .max(20, "Cant be more than 20 characters"),
+    lastName: z
+      .string()
+      .min(2, "Should be at least 2 characters")
+      .max(20, "Cant be more than 20 characters"),
+    email: z.string().email("Must be a valid email"),
+    password: z.string(),
+    confirmPassword: z
+      .string()
+      .min(8, "Should be at least 8 characters")
+      .max(10, "Cant be more than 10 characters"),
+    phonenumber: z
+      .string()
+      .min(10, "Must be a valid contact number")
+      .max(15, "Must be a valid contact number"),
+    // countrycode: z.string().min(2).max(4),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
 
-signupSchema.refine((data) => data.password === data.confirmPassword, {
-  path: ["confirmPassword"],
-  message: "Passwords do not match",
-});
+// signupSchema.refine((data) => data.password === data.confirmPassword, {
+//   path: ["confirmPassword"],
+//   message: "Passwords do not match",
+// });
 
-function FieldInfo({
-  field,
-  className,
-}: {
-  field: AnyFieldApi;
-  className?: string;
-}) {
-  if (!field.state.meta.isTouched && !field.state.meta.isValidating)
-    return null;
+function FieldInfo({ field, className }: { field: AnyFieldApi; className?: string }) {
+  if (!field.state.meta.isTouched && !field.state.meta.isValidating) return null;
 
   return (
     <div className={cn("absolute top-full left-0 mt-1 w-full", className)}>
@@ -92,8 +83,30 @@ export function SignupForm() {
   const form = useForm({
     defaultValues: defaultUser,
     validators: {
-      onChange: signupSchema,
-      onSubmit: signupSchema,
+      onChange: ({ value }) => {
+        const result = signupSchema.safeParse(value);
+        if (result.success) {
+          return undefined; // form valid
+        }
+
+        // Map Zod issues → TanStack-friendly field errors
+        const errors: Record<keyof User, string[]> = {} as any;
+        result.error.issues.forEach((issue) => {
+          const field = issue.path[0] as keyof User;
+          if (field) {
+            errors[field] = errors[field] || [];
+            errors[field].push(issue.message);
+          }
+        });
+        return errors;
+      },
+      onSubmit: ({ value }) => {
+        const result = signupSchema.safeParse(value);
+        if (result.success) {
+          return undefined; // form valid
+        }
+        return result.error.format();
+      },
     },
     onSubmit: async ({ value }) => {
       await authClient.signUp.email({
@@ -104,7 +117,7 @@ export function SignupForm() {
         countryCode: value.countrycode,
         fetchOptions: {
           onSuccess: () => {
-            redirect("/dashboard");
+            redirect("/protected/dashboard");
           },
           onError: (error) => {
             console.log(error);
@@ -118,9 +131,7 @@ export function SignupForm() {
       <Card>
         <CardHeader>
           <CardTitle>Sign Up</CardTitle>
-          <CardDescription>
-            Enter your email below to sign up for an account
-          </CardDescription>
+          <CardDescription>Enter your email below to sign up for an account</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -226,9 +237,7 @@ export function SignupForm() {
                 />
               </Field>
               <Field className="my-1 flex gap-2">
-                <FieldLabel htmlFor="confirmPassword">
-                  Confirm Password
-                </FieldLabel>
+                <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
                 <form.Field
                   name="confirmPassword"
                   children={(field) => (
@@ -260,7 +269,17 @@ export function SignupForm() {
                         name={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
-                        onChange={(value) => field.handleChange(value)}
+                        onChange={(newValue) => {
+                          field.handleChange(newValue || "");
+                          if (newValue) {
+                            const phoneNumber = parsePhoneNumber(newValue);
+                            if (phoneNumber?.country) {
+                              form.setFieldValue("countrycode", phoneNumber.country); // e.g. "IN"
+                            }
+                          } else {
+                            form.setFieldValue("countrycode", "");
+                          }
+                        }}
                         autoComplete="tel"
                         className="h-max rounded-md bg-white"
                         required
@@ -272,28 +291,24 @@ export function SignupForm() {
               </Field>
               <Field className="my-1 flex gap-2">
                 <form.Subscribe
-                  selector={(state) => [state.canSubmit, state.isSubmitting]}
+                  selector={(state) => [state.canSubmit, state.isSubmitting, state.isTouched]}
                   children={([canSubmit, isSubmitting]) => (
                     <>
-                      <Button
-                        type="submit"
-                        disabled={!canSubmit || isSubmitting}
-                        variant="default"
-                      >
-                        Login
+                      <Button type="submit" disabled={!canSubmit || isSubmitting} variant="default">
+                        {isSubmitting ? "Creating account..." : "Sign Up"}
                       </Button>
                     </>
                   )}
                 />
               </Field>
             </FieldGroup>
+            <div className="mt-6 p-4 bg-gray-100 rounded text-sm">
+              <pre>{JSON.stringify(form.state, null, 2)}</pre>
+            </div>
           </form>
           <CardFooter className="w-full justify-center py-2">
             Do you have an account?
-            <Link
-              href="/login"
-              className="text-primary ml-2 underline-offset-4 hover:underline"
-            >
+            <Link href="/login" className="text-primary ml-2 underline-offset-4 hover:underline">
               Login
             </Link>
           </CardFooter>

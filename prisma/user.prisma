@@ -21,10 +21,12 @@ model User {
   image         String?   
   phone         String
   countryCode   String  
+  accountStatus AccountStatus @default(ACTIVE)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
+  bookings      Booking[] 
 
   @@unique([email])
   @@map("user")
@@ -73,4 +75,70 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+}
+model Module {
+  id            String       @id @default(cuid())
+  name          String
+  order         Int          @unique
+  durationHours Int
+  trainingDays  TrainingDay[]
+}
+
+model TrainingDay {
+  id         String    @id @default(cuid())
+  date       DateTime  @unique
+  moduleId   String?
+  module     Module?   @relation(fields: [moduleId], references: [id])
+  isGapDay   Boolean   @default(false)
+  capacity   Int       @default(10)
+  isActive   Boolean   @default(true)
+  bookings   BookingSlot[]
+  createdAt  DateTime  @default(now())
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id])
+  status     BookingStatus @default(DRAFT)
+  totalHours Int           @default(0)
+  slots      BookingSlot[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model BookingSlot {
+  id            String      @id @default(cuid())
+  bookingId     String
+  trainingDayId String
+
+  booking       Booking     @relation(fields: [bookingId], references: [id])
+  trainingDay   TrainingDay @relation(fields: [trainingDayId], references: [id])
+
+  createdAt     DateTime    @default(now())
+
+  @@unique([bookingId, trainingDayId])
+  @@index([trainingDayId])
+}
+model SystemLog {
+  id          String   @id @default(cuid())
+  requestId   String
+  method      String
+  path        String
+  status      Int
+  durationMs  Int
+
+  metadata    Json
+
+  createdAt   DateTime @default(now())
+}
+
+enum BookingStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
 }

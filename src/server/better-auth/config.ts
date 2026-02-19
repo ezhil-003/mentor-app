@@ -5,7 +5,6 @@ import { env } from "@/env";
 import { db } from "@/server/db";
 
 export const auth = betterAuth({
-
   baseURL: env.NEXT_PUBLIC_BASE_URL,
 
   trustedOrigins: [env.NEXT_PUBLIC_BASE_URL],
@@ -30,8 +29,8 @@ export const auth = betterAuth({
         type: "string",
         input: true,
       },
-    }
-  }
+    },
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;

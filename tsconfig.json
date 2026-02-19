@@ -27,7 +27,8 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@prismagen/*": ["./generated/prisma/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.cjs", "**/*.js", ".next/types/**/*.ts"],

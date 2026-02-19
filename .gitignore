@@ -45,3 +45,9 @@ yarn-error.log*
 # idea files
 .idea
 /generated/prisma
+
+#ai stuffs
+.claude
+.claude/*
+.agent
+.agent/*

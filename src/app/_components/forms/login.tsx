@@ -1,25 +1,13 @@
-"use client"
+"use client";
 import Link from "next/link";
 import { z } from "zod";
-import type { User } from "@/app/@types/formTypes";
+import type { User } from "@/app/@types/types";
 import { useForm, type AnyFieldApi } from "@tanstack/react-form-nextjs";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { redirect } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/components/ui/field";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldDescription, FieldGroup, FieldLabel, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/server/better-auth/client";
 
@@ -36,15 +24,8 @@ const signinSchema = z.object({
     .max(10, "Cant be more than 10 characters"),
 });
 
-function FieldInfo({
-  field,
-  className,
-}: {
-  field: AnyFieldApi;
-  className?: string;
-}) {
-  if (!field.state.meta.isTouched && !field.state.meta.isValidating)
-    return null;
+function FieldInfo({ field, className }: { field: AnyFieldApi; className?: string }) {
+  if (!field.state.meta.isTouched && !field.state.meta.isValidating) return null;
 
   return (
     <div className={cn("absolute top-full left-0 mt-1 w-full", className)}>
@@ -65,7 +46,7 @@ export function LoginForm() {
     defaultValues: defaultUser,
     validators: {
       onDynamic: signinSchema,
-      onChange: signinSchema
+      onChange: signinSchema,
     },
     onSubmit: async ({ value }) => {
       await authClient.signIn.email({
@@ -87,16 +68,16 @@ export function LoginForm() {
       <Card>
         <CardHeader>
           <CardTitle>Login to your account</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
+          <CardDescription>Enter your email below to login to your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            void form.handleSubmit();
-          }}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void form.handleSubmit();
+            }}
+          >
             <FieldGroup>
               <Field className="my-1 flex gap-2">
                 <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -148,10 +129,7 @@ export function LoginForm() {
                   selector={(state) => [state.canSubmit, state.isSubmitting]}
                   children={([canSubmit, isSubmitting]) => (
                     <>
-                      <Button
-                        type="submit"
-                        disabled={!canSubmit || isSubmitting}
-                      >
+                      <Button type="submit" disabled={!canSubmit || isSubmitting}>
                         Login
                       </Button>
                     </>

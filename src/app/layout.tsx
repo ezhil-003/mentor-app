@@ -2,7 +2,7 @@ import "@/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Inter } from "next/font/google";
-
+import { Toaster } from "@/components/ui/sonner"
 import { TRPCReactProvider } from "@/trpc/react";
 
 export const metadata: Metadata = {
@@ -21,6 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={`${inter.variable}`}>
       <body>
         <TRPCReactProvider>{children}</TRPCReactProvider>
+        <Toaster position="top-right" />
       </body>
     </html>
   );
