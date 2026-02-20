@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "jwks" ALTER COLUMN "createdAt" DROP DEFAULT,
+ALTER COLUMN "expiresAt" DROP NOT NULL,
+ALTER COLUMN "expiresAt" DROP DEFAULT;

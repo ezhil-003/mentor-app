@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { z } from "zod";
-import type { User } from "@/app/@types/types";
+import type { User } from "@/app/_types/types";
 import { useForm, type AnyFieldApi } from "@tanstack/react-form-nextjs";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/server/better-auth/client";
+import { toast } from "sonner";
 
 const defaultUser: Pick<User, "email" | "password"> = {
   email: "",
@@ -54,10 +55,12 @@ export function LoginForm() {
         password: value.password,
         fetchOptions: {
           onSuccess: () => {
-            redirect("/dashboard");
+            toast.success("Login successful");
+            redirect("/protected/dashboard");
           },
           onError: (error) => {
             console.log(error);
+            toast.error(error.error.message);
           },
         },
       });

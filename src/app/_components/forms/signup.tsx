@@ -1,7 +1,7 @@
 "use client";
 import { z } from "zod";
 import Link from "next/link";
-import type { User } from "@/app/@types/types";
+import type { User } from "@/app/_types/types";
 import { useForm, type AnyFieldApi } from "@tanstack/react-form-nextjs";
 import { parsePhoneNumber } from "react-phone-number-input";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { authClient } from "@/server/better-auth/client";
 import { redirect } from "next/navigation";
+import { toast } from "sonner";
 
 const defaultUser: User = {
   firstName: "",
@@ -42,10 +43,7 @@ const signupSchema = z
       .max(20, "Cant be more than 20 characters"),
     email: z.string().email("Must be a valid email"),
     password: z.string(),
-    confirmPassword: z
-      .string()
-      .min(8, "Should be at least 8 characters")
-      .max(10, "Cant be more than 10 characters"),
+    confirmPassword: z.string(),
     phonenumber: z
       .string()
       .min(10, "Must be a valid contact number")
@@ -56,11 +54,6 @@ const signupSchema = z
     path: ["confirmPassword"],
     message: "Passwords do not match",
   });
-
-// signupSchema.refine((data) => data.password === data.confirmPassword, {
-//   path: ["confirmPassword"],
-//   message: "Passwords do not match",
-// });
 
 function FieldInfo({ field, className }: { field: AnyFieldApi; className?: string }) {
   if (!field.state.meta.isTouched && !field.state.meta.isValidating) return null;
@@ -117,10 +110,12 @@ export function SignupForm() {
         countryCode: value.countrycode,
         fetchOptions: {
           onSuccess: () => {
+            toast.success("Signup successful");
             redirect("/protected/dashboard");
           },
           onError: (error) => {
             console.log(error);
+            toast.error(error.error.message);
           },
         },
       });
@@ -302,13 +297,10 @@ export function SignupForm() {
                 />
               </Field>
             </FieldGroup>
-            <div className="mt-6 p-4 bg-gray-100 rounded text-sm">
-              <pre>{JSON.stringify(form.state, null, 2)}</pre>
-            </div>
           </form>
           <CardFooter className="w-full justify-center py-2">
             Do you have an account?
-            <Link href="/login" className="text-primary ml-2 underline-offset-4 hover:underline">
+            <Link href="/" className="text-primary ml-2 underline-offset-4 hover:underline">
               Login
             </Link>
           </CardFooter>

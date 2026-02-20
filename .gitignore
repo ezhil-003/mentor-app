@@ -46,6 +46,10 @@ yarn-error.log*
 .idea
 /generated/prisma
 
+#vscode
+.vscode
+.vscode/*
+
 #ai stuffs
 .claude
 .claude/*

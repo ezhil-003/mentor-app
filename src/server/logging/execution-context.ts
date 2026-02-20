@@ -1,11 +1,19 @@
 import type { Prisma } from "../../../generated/prisma/client";
 
+/**
+ * This type is used to store the business events.
+ * It contains the name of the event, the time it occurred, and the data associated with it.
+ */
 export type BusinessEvent = {
   name: string;
   at: string;
   data: Record<string, Prisma.InputJsonValue>;
 };
 
+/**
+ * This type is used to store the execution context.
+ * It contains the metadata, actor, business events, performance metrics, errors, and response status.
+ */
 export type ExecutionContextState = {
   meta: {
     requestId: string;
@@ -33,6 +41,12 @@ export type ExecutionContextState = {
   };
 };
 
+/**
+ * This function is used to add a business event to the execution context.
+ * @param state - The execution context.
+ * @param name - The name of the event.
+ * @param data - The data associated with the event.
+ */
 export const addExecutionBusinessEvent = (
   state: ExecutionContextState,
   name: string,
@@ -45,6 +59,11 @@ export const addExecutionBusinessEvent = (
   });
 };
 
+/**
+ * This function is used to add performance metrics to the execution context.
+ * @param state - The execution context.
+ * @param delta - The performance metrics to add.
+ */
 export const addExecutionPerformance = (
   state: ExecutionContextState,
   delta: Partial<ExecutionContextState["performance"]>,
@@ -58,6 +77,12 @@ export const addExecutionPerformance = (
   }
 };
 
+/**
+ * This function is used to add an error to the execution context.
+ * @param state - The execution context.
+ * @param stage - The stage where the error occurred.
+ * @param error - The error that occurred.
+ */
 export const addExecutionError = (state: ExecutionContextState, stage: string, error: unknown) => {
   state.errors.push({
     stage,
@@ -66,6 +91,11 @@ export const addExecutionError = (state: ExecutionContextState, stage: string, e
   });
 };
 
+/**
+ * This function is used to persist the execution context log to the database.
+ * @param db - The database client.
+ * @param state - The execution context.
+ */
 export const persistExecutionContextLog = async (
   db: {
     systemLog: {

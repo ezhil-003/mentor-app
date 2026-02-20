@@ -6,6 +6,15 @@ type TransactionExecutor = {
   $transaction: <T>(fn: (tx: Prisma.TransactionClient) => Promise<T>) => Promise<T>;
 };
 
+/**
+ * This function is used to run a transaction.
+ * It uses the $transaction method to run the transaction.
+ * @param db - The database client.
+ * @param executionContext - The execution context.
+ * @param callback - The callback function.
+ * @returns The result of the transaction.
+ */
+
 export const runTrackedTransaction = async <T>(
   db: TransactionExecutor,
   executionContext: ExecutionContextState,

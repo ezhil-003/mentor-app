@@ -1,0 +1,36 @@
+<svg width="220" height="60" viewBox="0 0 220 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon Container -->
+  <g transform="translate(5,5)">
+    
+    <!-- Wizard Hat (M shaped) -->
+    <path d="M10 35 L20 10 L30 35 L40 15 L50 35"
+          stroke="#6D28D9"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"/>
+
+    <!-- Hat Base -->
+    <rect x="8" y="35" width="44" height="6" rx="3" fill="#6D28D9"/>
+
+    <!-- Magic Star -->
+    <circle cx="45" cy="10" r="3" fill="#FBBF24"/>
+  </g>
+
+  <!-- Text -->
+  <text x="70" y="38"
+        font-family="Inter, sans-serif"
+        font-size="22"
+        font-weight="600"
+        fill="#111827">
+    Mentor
+  </text>
+
+  <text x="145" y="38"
+        font-family="Inter, sans-serif"
+        font-size="22"
+        font-weight="400"
+        fill="#6D28D9">
+    Merlin
+  </text>
+</svg>

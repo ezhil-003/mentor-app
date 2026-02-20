@@ -1,33 +1,19 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { runTrackedTransaction } from "@/server/db/runTrackedTransaction";
-import { addSlotToDraft, confirmDraftBooking,submitBooking } from "@/server/domain/booking";
-import { startOfMonth, endOfMonth,addMonths } from "date-fns";
+import { updateBookingSlots } from "@/server/domain/booking";
+import { startOfMonth, endOfMonth, addMonths } from "date-fns";
 
 export const bookingRouter = createTRPCRouter({
-  addSlot: protectedProcedure
-    .input(z.object({ trainingDayId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      return runTrackedTransaction(ctx.db, ctx.executionContext, async (tx) => {
-        return addSlotToDraft(tx, ctx.executionContext, ctx.session.user.id, input.trainingDayId);
-      });
-    }),
-
-  confirmBooking: protectedProcedure
-    .input(z.object({ bookingId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      return runTrackedTransaction(ctx.db, ctx.executionContext, async (tx) => {
-        return confirmDraftBooking(tx, ctx.executionContext, ctx.session.user.id, input.bookingId);
-      });
-    }),
-  // -------------------------------
-  // GET CALENDAR MONTH
-  // -------------------------------
+  /**
+   * This procedure is used to get the calendar month.
+   * It returns the training days for the given month.
+   */
   getCalendarMonth: protectedProcedure
     .input(
       z.object({
         year: z.number(),
-        month: z.number(), // 0-indexed (JS month)
+        month: z.number(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -86,20 +72,87 @@ export const bookingRouter = createTRPCRouter({
 
       return result;
     }),
+
+  /**
+   * This procedure is used to submit the booking.
+   * It uses the updateBookingSlots function to update the booking slots.
+   */
   submitBooking: protectedProcedure
-      .input(
-        z.object({
-          trainingDayIds: z.array(z.string()).min(1),
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        return runTrackedTransaction(ctx.db, ctx.executionContext, async (tx) => {
-          return submitBooking(
-            tx,
-            ctx.executionContext,
-            ctx.session.user.id,
-            input.trainingDayIds,
-          );
+    .input(z.object({ trainingDayIds: z.array(z.string()) }))
+    .mutation(async ({ ctx, input }) => {
+      return runTrackedTransaction(ctx.db, ctx.executionContext, async (tx) => {
+        return updateBookingSlots(tx, ctx.session.user.id, input.trainingDayIds);
+      });
+    }),
+
+  /**
+   * This procedure is used to get the user's booking.
+   * It returns the booking if the user has a booking.
+   */ 
+  getMyBooking: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db.booking.findFirst({
+      where: {
+        userId: ctx.session.user.id,
+        status: {
+          in: ["DRAFT", "CONFIRMED"],
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        slots: {
+          include: {
+            trainingDay: {
+              include: {
+                module: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }),
+
+  /**
+   * This procedure is used to remove a slot from the booking.
+   * It uses the updateBookingSlots function to update the booking slots.
+   */
+  removeSlot: protectedProcedure
+    .input(z.object({ trainingDayId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return runTrackedTransaction(ctx.db, ctx.executionContext, async (tx) => {
+        const booking = await tx.booking.findFirst({
+          where: {
+            userId: ctx.session.user.id,
+            status: { in: ["DRAFT", "CONFIRMED"] },
+          },
         });
-      }),
+
+        if (!booking) return;
+
+        await tx.bookingSlot.deleteMany({
+          where: {
+            bookingId: booking.id,
+            trainingDayId: input.trainingDayId,
+          },
+        });
+
+        const remaining = await tx.bookingSlot.count({
+          where: { bookingId: booking.id },
+        });
+
+        const newStatus = remaining === 7 ? "CONFIRMED" : "DRAFT";
+
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            totalHours: remaining,
+            status: newStatus,
+          },
+        });
+
+        return { remaining, status: newStatus };
+      });
+    }),
 });

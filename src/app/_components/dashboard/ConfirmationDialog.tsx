@@ -10,9 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import type { CalendarDay } from "@/app/@types/types";
+import type { CalendarDay } from "@/app/_types/types";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type DialogProps = {
   isRequirementMet: boolean;
@@ -34,45 +35,53 @@ export default function ConfirmationDialog({
   const [open, setOpen] = React.useState(false);
   const [isPendingTransition, startTransition] = useTransition();
   const utils = api.useUtils();
+  const router = useRouter();
   const submitMutation = api.booking.submitBooking.useMutation({
-      onSuccess: async (data) => {
-        // data should contain bookingId from backend
-        await utils.booking.getCalendarMonth.invalidate();
-  
-        startTransition(() => {
-          setSelectedTrainingDayIds([]);
-          setOpen(false);
-        });
-  
-        toast("Booking Confirmed 🎉", {
-          description: `Booking ID: ${data.bookingId}`,
-        });
-      },
-    });
+    onSuccess: async () => {
+      // data should contain bookingId from backend
+      await utils.booking.getCalendarMonth.invalidate();
+      await utils.booking.getMyBooking.invalidate();
+      startTransition(() => {
+        setSelectedTrainingDayIds([]);
+        setOpen(false);
+      });
+
+      toast("Booking Confirmed 🎉", {
+        description: `Booking Confirmed check Scheduled Classes`,
+      });
+
+      router.refresh();
+    },
+  });
 
   const selectedDays = useMemo(() => {
     return selectedTrainingDayIds.map((id) => calendar.find((d) => d.id === id)).filter(Boolean);
   }, [selectedTrainingDayIds, calendar]);
-  
-  const isSubmitting =
-      submitMutation.isPending || isPendingTransition;
+
+  const isSubmitting = submitMutation.isPending || isPendingTransition;
 
   return (
-    <Dialog open={open} onOpenChange={(next) => {
-            if (!isSubmitting) setOpen(next); // prevent backdrop close while submitting
-          }}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!isSubmitting) setOpen(next); // prevent backdrop close while submitting
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="w-full h-11 text-base" disabled={!isRequirementMet}>
           Confirm Booking
         </Button>
       </DialogTrigger>
 
-      <DialogContent onPointerDownOutside={(e) => {
-                if (isSubmitting) e.preventDefault();
-              }}
-              onEscapeKeyDown={(e) => {
-                if (isSubmitting) e.preventDefault();
-              }} className="max-w-4xl">
+      <DialogContent
+        onPointerDownOutside={(e) => {
+          if (isSubmitting) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isSubmitting) e.preventDefault();
+        }}
+        className="max-w-4xl"
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl">Review Selected Slots</DialogTitle>
         </DialogHeader>
@@ -116,7 +125,9 @@ export default function ConfirmationDialog({
         </div>
 
         <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
           <Button
             disabled={!isRequirementMet || submitMutation.isPending}
             onClick={() =>
